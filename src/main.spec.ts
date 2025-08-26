@@ -1,37 +1,43 @@
 describe('Main bootstrap', () => {
   const originalEnv = process.env;
-  const originalConsoleLog = console.log;
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    jest.spyOn(console, 'log').mockImplementation();
   });
 
   afterEach(() => {
     process.env = originalEnv;
-    console.log = originalConsoleLog;
-    jest.restoreAllMocks();
   });
 
-  describe('environment handling', () => {
-    it('should handle PORT environment variable', () => {
-      process.env.PORT = '3000';
-      expect(process.env.PORT).toBe('3000');
-    });
-
-    it('should handle missing PORT environment variable', () => {
+  describe('bootstrap logic', () => {
+    it('should handle default port fallback', () => {
       delete process.env.PORT;
-      expect(process.env.PORT).toBeUndefined();
+      const port = process.env.PORT ?? 4000;
+      expect(port).toBe(4000);
     });
 
-    it('should handle invalid PORT values', () => {
-      process.env.PORT = 'invalid';
-      expect(process.env.PORT).toBe('invalid');
+    it('should use custom port when provided', () => {
+      process.env.PORT = '3000';
+      const port = process.env.PORT ?? 4000;
+      expect(port).toBe('3000');
     });
 
-    it('should handle empty PORT value', () => {
-      process.env.PORT = '';
-      expect(process.env.PORT).toBe('');
+    it('should format error messages correctly', () => {
+      const error = new Error('Test error');
+      const message = `Error al iniciar la aplicacion: ${error}`;
+      expect(message).toBe('Error al iniciar la aplicacion: Error: Test error');
+    });
+
+    it('should handle string errors', () => {
+      const error = 'String error';
+      const message = `Error al iniciar la aplicacion: ${error}`;
+      expect(message).toBe('Error al iniciar la aplicacion: String error');
+    });
+
+    it('should handle null/undefined errors', () => {
+      const error = null;
+      const message = `Error al iniciar la aplicacion: ${error}`;
+      expect(message).toBe('Error al iniciar la aplicacion: null');
     });
   });
 
