@@ -1,5 +1,6 @@
 pipeline {
   agent any
+  tools { nodejs 'node20' }
 
   environment {
     SONAR_HOST_URL = 'http://localhost:9000'
