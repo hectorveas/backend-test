@@ -26,9 +26,6 @@ pipeline {
       post {
         always {
           archiveArtifacts artifacts: 'coverage/**', allowEmptyArchive: true
-          publishCoverage adapters: [
-            lcovAdapter('**/lcov.info')
-          ], sourceCodeRetention: 'EVERY_BUILD'
         }
       }
     }
