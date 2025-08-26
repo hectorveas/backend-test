@@ -1,22 +1,20 @@
 pipeline {
   agent any
-  tools { nodejs 'node20' }
+  tools { nodejs 'node20' } 
 
   environment {
-    SONAR_HOST_URL = 'http://localhost:9000'
-    REGISTRY_URL   = 'localhost:8082'
-    IMAGE_NAME     = 'backend-test'
+    SONAR_SERVER = 'sonar-local'
+    SONAR_SCANNER = 'sonar-scanner'
+    REGISTRY_URL = 'localhost:8082'
+    IMAGE_NAME   = 'backend-test'
   }
 
   stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
+    stage('Checkout') { steps { checkout scm } }
 
     stage('Install deps') {
       steps {
+        sh 'node -v && npm -v'
         sh 'npm ci'
       }
     }
@@ -27,27 +25,25 @@ pipeline {
       }
       post {
         always {
-          publishCoverage adapters: [
-            lcovAdapter('**/lcov.info')
-          ], sourceCodeRetention: 'EVERY_BUILD'
+          archiveArtifacts artifacts: 'coverage/**', allowEmptyArchive: true
+          junit allowEmptyResults: true, testResults: '**/junit*.xml,**/surefire-reports/*.xml'
         }
       }
     }
 
     stage('Build app') {
-      steps {
-        sh 'npm run build || echo "skip build"'
-      }
+      steps { sh 'npm run build || echo "skip build"' }
     }
 
     stage('SonarQube Scan') {
       steps {
-        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-          sh """
-            sonar-scanner \
-              -Dsonar.host.url=$SONAR_HOST_URL \
-              -Dsonar.login=$SONAR_TOKEN
-          """
+        withSonarQubeEnv("${env.SONAR_SERVER}") {
+          script {
+            def scannerHome = tool "${env.SONAR_SCANNER}"
+            sh """
+              ${scannerHome}/bin/sonar-scanner
+            """
+          }
         }
       }
     }
@@ -94,8 +90,7 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'kubernetes.yaml, sonar-project.properties, **/coverage/**', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'kubernetes.yaml, sonar-project.properties, coverage/**', allowEmptyArchive: true
     }
   }
 }
-
